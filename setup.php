@@ -6,17 +6,17 @@
  -------------------------------------------------------------------------
  */
 
-define('PLUGIN_TICKETMULTIPLE_VERSION', '1.0.0');
+define('PLUGIN_TICKETMULTIPLE_VERSION', '1.1.0');
 // Minimal GLPI version, inclusive
-define('PLUGIN_TICKETMULTIPLE_MIN_GLPI', '11.0.0');
+define('PLUGIN_TICKETMULTIPLE_MIN_GLPI', '12.0.0');
 // Maximum GLPI version, exclusive
-define('PLUGIN_TICKETMULTIPLE_MAX_GLPI', '11.2.0');
+define('PLUGIN_TICKETMULTIPLE_MAX_GLPI', '12.0.99');
 
 if (!defined("PLUGIN_TICKETMULTIPLE_DIR")) {
    define("PLUGIN_TICKETMULTIPLE_DIR", Plugin::getPhpDir("ticketmultiple"));
    define("PLUGIN_TICKETMULTIPLE_NOTFULL_DIR", Plugin::getPhpDir("ticketmultiple", false));
-   define("PLUGIN_TICKETMULTIPLE_WEBDIR", Plugin::getWebDir("ticketmultiple"));
-   define("PLUGIN_TICKETMULTIPLE_NOTFULL_WEBDIR", Plugin::getWebDir("ticketmultiple", false));
+   define("PLUGIN_TICKETMULTIPLE_WEBDIR", ($GLOBALS['CFG_GLPI']['root_doc'] ?? '') . '/plugins/ticketmultiple');
+   define("PLUGIN_TICKETMULTIPLE_NOTFULL_WEBDIR", 'plugins/ticketmultiple');
 }
 
 /**
@@ -29,7 +29,6 @@ function plugin_init_ticketmultiple()
 {
    global $PLUGIN_HOOKS;
 
-   $PLUGIN_HOOKS['csrf_compliant']['ticketmultiple'] = true;
 
    $plugin = new Plugin();
    if ($plugin->isInstalled('ticketmultiple') && $plugin->isActivated('ticketmultiple')) {

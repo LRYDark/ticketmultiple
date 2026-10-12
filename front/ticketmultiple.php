@@ -6,12 +6,11 @@
  -------------------------------------------------------------------------
  */
 
-include('../../../inc/includes.php');
 
 Session::checkLoginUser();
 
 if (!PluginTicketmultipleTicketmultiple::canUserAccess()) {
-   Html::displayRightError();
+   throw new \Glpi\Exception\Http\AccessDeniedHttpException();
 }
 
 // URL explicite de la page : NE PAS utiliser $_SERVER['PHP_SELF'].
@@ -20,34 +19,14 @@ if (!PluginTicketmultipleTicketmultiple::canUserAccess()) {
 // (le corps est alors parse en XML d'inventaire -> erreur "XML not well formed").
 $self_url = PLUGIN_TICKETMULTIPLE_WEBDIR . "/front/ticketmultiple.php";
 
-/**
- * Verification CSRF.
- * On utilise un token STANDALONE custom (genere avec getNewCSRFToken(true)) :
- * le token partage `_glpi_csrf_token` est consomme par les appels AJAX de
- * l'editeur enrichi avant la soumission du formulaire -> CSRF echoue.
- */
-function pluginTicketmultipleCheckCSRF(array $data): void
-{
-   if (!empty($data['plugin_ticketmultiple_csrf_token'])) {
-      Session::checkCSRF(
-         ['_glpi_csrf_token' => (string)$data['plugin_ticketmultiple_csrf_token']],
-         true
-      );
-      return;
-   }
-   Session::checkCSRF($data);
-}
-
 $created = [];
 $errors  = [];
 
 // ---- Traitement de la soumission ----
 if (isset($_POST['create_tickets'])) {
-   pluginTicketmultipleCheckCSRF($_POST);
-
    if (!Session::haveRight('plugin_ticketmultiple_use', CREATE)
        && PluginTicketmultipleConfig::getConfig()['access_mode'] == PluginTicketmultipleConfig::MODE_PROFILE) {
-      Html::displayRightError();
+      throw new \Glpi\Exception\Http\AccessDeniedHttpException();
    }
 
    $name      = trim((string)($_POST['name'] ?? ''));
@@ -138,7 +117,6 @@ if (!empty($created)) {
 // Formulaire de saisie (masque une fois les tickets crees)
 if (empty($created)) {
 echo "<form method='post' action='" . htmlspecialchars($self_url) . "'>";
-echo Html::hidden('plugin_ticketmultiple_csrf_token', ['value' => Session::getNewCSRFToken(true)]);
 
 echo "<div class='card' style='max-width:900px;margin:auto;'>";
 echo "<div class='card-body'>";

@@ -11,7 +11,7 @@ if (!defined('GLPI_ROOT')) {
 
 class PluginTicketmultipleTicketmultiple extends CommonGLPI
 {
-   static $rightname = 'plugin_ticketmultiple_use';
+   static string $rightname = 'plugin_ticketmultiple_use';
 
    static function getTypeName($nb = 0)
    {

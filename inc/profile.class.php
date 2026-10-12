@@ -11,7 +11,7 @@ if (!defined('GLPI_ROOT')) {
 
 class PluginTicketmultipleProfile extends Profile
 {
-   static $rightname = "profile";
+   static string $rightname = "profile";
 
    static function getAllRights()
    {

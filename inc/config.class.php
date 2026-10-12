@@ -11,7 +11,7 @@ if (!defined('GLPI_ROOT')) {
 
 class PluginTicketmultipleConfig extends CommonDBTM
 {
-   static $rightname = 'config';
+   static string $rightname = 'config';
 
    const MODE_PROFILE = 0; // tous les users des profils autorises
    const MODE_USERS   = 1; // uniquement les users choisis
@@ -103,7 +103,6 @@ class PluginTicketmultipleConfig extends CommonDBTM
       $allowed_users = self::getAllowedUserIds();
 
       echo "<form method='post' action='" . PLUGIN_TICKETMULTIPLE_WEBDIR . "/front/config.form.php'>";
-      echo Html::hidden('plugin_ticketmultiple_csrf_token', ['value' => Session::getNewCSRFToken(true)]);
 
       echo "<div class='card' style='max-width:760px;margin:auto;'>";
       echo "<div class='card-body'>";

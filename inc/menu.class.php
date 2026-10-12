@@ -14,7 +14,7 @@ if (!defined('GLPI_ROOT')) {
  */
 class PluginTicketmultipleMenu extends CommonGLPI
 {
-   static $rightname = 'plugin_ticketmultiple_use';
+   static string $rightname = 'plugin_ticketmultiple_use';
 
    static function getMenuName()
    {
