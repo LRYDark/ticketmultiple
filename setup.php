@@ -6,7 +6,7 @@
  -------------------------------------------------------------------------
  */
 
-define('PLUGIN_TICKETMULTIPLE_VERSION', '1.0.0');
+define('PLUGIN_TICKETMULTIPLE_VERSION', '1.0.1');
 // Minimal GLPI version, inclusive
 define('PLUGIN_TICKETMULTIPLE_MIN_GLPI', '11.0.0');
 // Maximum GLPI version, exclusive
