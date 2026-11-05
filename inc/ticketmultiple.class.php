@@ -109,13 +109,15 @@ class PluginTicketmultipleTicketmultiple extends CommonGLPI
    }
 
    /**
-    * Cree un ticket (avec sa tache) par entite fournie.
+    * Cree un ticket (avec sa tache si demandee) par entite fournie.
     *
     * @param array $params
     *    - name              string  Titre
     *    - content           string  Description
+    *    - status            int     statut du ticket (Nouveau par defaut)
     *    - type              int     Ticket::INCIDENT_TYPE | DEMAND_TYPE
     *    - itilcategories_id int
+    *    - add_task          bool    ajouter la tache a chaque ticket
     *    - task_content      string
     *    - task_actiontime   int     duree en secondes
     *    - entities          int[]   entites cibles
@@ -149,13 +151,16 @@ class PluginTicketmultipleTicketmultiple extends CommonGLPI
             'entities_id'           => $entity_id,
             '_users_id_requester'   => $requester,
             '_users_id_assign'      => $tech_id,
-            'status'                => CommonITILObject::ASSIGNED,
+            'status'                => (int)($params['status'] ?? CommonITILObject::INCOMING),
+            // Statut choisi dans le formulaire : GLPI ne le recalcule pas. Sans ce drapeau natif, un ticket
+            // "Nouveau" avec un technicien attribue passerait de lui-meme en "En cours (Attribue)".
+            '_do_not_compute_status' => true,
          ];
          $tid = $ticket->add($input);
 
          if ($tid) {
-            // Tache associee, avec temps passe au nom du technicien createur
-            if (trim((string)$params['task_content']) !== '' || (int)$params['task_actiontime'] > 0) {
+            // Tache associee (si demandee), avec temps passe au nom du technicien createur
+            if (!empty($params['add_task'])) {
                $task = new TicketTask();
                $task->add([
                   'tickets_id'    => $tid,
@@ -164,6 +169,8 @@ class PluginTicketmultipleTicketmultiple extends CommonGLPI
                   'users_id'      => $tech_id,
                   'users_id_tech' => $tech_id,
                   'state'         => Planning::DONE,
+                  // La tache ne change pas le statut choisi pour le ticket.
+                  '_do_not_compute_status' => true,
                ]);
             }
 

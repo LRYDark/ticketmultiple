@@ -1,0 +1,26 @@
+# Journal des changements
+
+## 1.1.1 — 2026-11-05
+
+**Après la mise à jour : cliquer « Mettre à jour » dans Configuration → Plugins.** Aucune migration de base.
+
+- **Statut des tickets créés**, choisi tout en haut du formulaire : **Nouveau** par défaut, parmi les statuts que le
+  profil autorise à la création (liste native de GLPI). Le statut choisi est conservé : GLPI ne le recalcule pas
+  (drapeau natif `_do_not_compute_status`), sinon un ticket « Nouveau » avec un technicien attribué passerait de
+  lui-même en « En cours (Attribué) ». Avant : toujours « En cours (Attribué) ».
+- **Tâche facultative** : interrupteur « Ajouter une tâche à chaque ticket », activé par défaut. Désactivé, les
+  champs de la tâche sont masqués et aucune tâche n'est créée ; activé, sa description et sa durée sont
+  obligatoires. Après une erreur, l'interrupteur garde sa position.
+- **Champs obligatoires** : astérisque rouge, celui des formulaires natifs de GLPI (`span.required`).
+- README : compatibilité GLPI 12.0.x (il indiquait encore GLPI 11).
+
+## 1.1.0 — 2026-10-12
+
+Première version pour GLPI 12 (12.0.x). La série 1.0.x reste celle de GLPI 11 (branche `GLPI_11`).
+
+- Propriétés typées de GLPI 12 (`$rightname`, `$dohistory`…) et API retirées remplacées.
+- Plus de jeton CSRF : GLPI 12 contrôle l'origine de la requête.
+
+## 1.0.0 — 2026-06-17
+
+Première version (GLPI 11) : création en une fois d'un ticket identique par entité sélectionnée, avec sa tâche.

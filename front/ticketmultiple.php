@@ -22,6 +22,9 @@ $self_url = PLUGIN_TICKETMULTIPLE_WEBDIR . "/front/ticketmultiple.php";
 $created = [];
 $errors  = [];
 
+// Tache ajoutee a chaque ticket : activee par defaut ; apres une erreur, l'interrupteur garde la position envoyee.
+$add_task = !isset($_POST['create_tickets']) || !empty($_POST['add_task']);
+
 // ---- Traitement de la soumission ----
 if (isset($_POST['create_tickets'])) {
    if (!Session::haveRight('plugin_ticketmultiple_use', CREATE)
@@ -32,6 +35,7 @@ if (isset($_POST['create_tickets'])) {
    $name      = trim((string)($_POST['name'] ?? ''));
    $content   = trim((string)($_POST['content'] ?? ''));
    $task      = trim((string)($_POST['task_content'] ?? ''));
+   $status    = (int)($_POST['status'] ?? Ticket::INCOMING);
    $type      = (int)($_POST['type'] ?? 0);
    $category  = (int)($_POST['itilcategories_id'] ?? 0);
    $actiontime = (int)($_POST['task_actiontime'] ?? 0);
@@ -43,7 +47,11 @@ if (isset($_POST['create_tickets'])) {
       return $v >= 0;
    });
 
-   // Tous les champs sont obligatoires
+   // Tous les champs sont obligatoires (ceux de la tache seulement si elle est ajoutee)
+   // Statut : un de ceux que le profil autorise a la creation (depuis "Nouveau"), comme le formulaire de GLPI.
+   if (!array_key_exists($status, Ticket::getAllowedStatusArray(Ticket::INCOMING))) {
+      $errors[] = __('Ce statut n\'est pas autorise pour votre profil', 'ticketmultiple');
+   }
    if ($type <= 0) {
       $errors[] = __('Le type est obligatoire', 'ticketmultiple');
    }
@@ -56,11 +64,13 @@ if (isset($_POST['create_tickets'])) {
    if ($content === '' || $content === '<p></p>') {
       $errors[] = __('La description est obligatoire', 'ticketmultiple');
    }
-   if ($task === '' || $task === '<p></p>') {
-      $errors[] = __('La description de la tache est obligatoire', 'ticketmultiple');
-   }
-   if ($actiontime <= 0) {
-      $errors[] = __('La duree de la tache est obligatoire', 'ticketmultiple');
+   if ($add_task) {
+      if ($task === '' || $task === '<p></p>') {
+         $errors[] = __('La description de la tache est obligatoire', 'ticketmultiple');
+      }
+      if ($actiontime <= 0) {
+         $errors[] = __('La duree de la tache est obligatoire', 'ticketmultiple');
+      }
    }
    if (empty($entities)) {
       $errors[] = __('Selectionnez au moins une entite', 'ticketmultiple');
@@ -70,8 +80,10 @@ if (isset($_POST['create_tickets'])) {
       $created = PluginTicketmultipleTicketmultiple::createTickets([
          'name'              => $name,
          'content'           => $content,
+         'status'            => $status,
          'type'              => $type,
          'itilcategories_id' => $category,
+         'add_task'          => $add_task,
          'task_content'      => $task,
          'task_actiontime'   => $actiontime,
          'entities'          => $entities,
@@ -122,17 +134,33 @@ echo "<div class='card' style='max-width:900px;margin:auto;'>";
 echo "<div class='card-body'>";
 echo "<h3 class='mb-3'><i class='fa-solid fa-layer-group me-2'></i>" . __('Creer des tickets multiples', 'ticketmultiple') . "</h3>";
 
+// Marque des champs obligatoires : celle des formulaires natifs de GLPI (asterisque rouge).
+$required = "<span class='required'>*</span>";
+
 echo "<div class='row'>";
+
+// Statut des tickets crees, "Nouveau" par defaut : les statuts que le profil autorise a la creation.
+echo "<div class='col-md-6 mb-3'>";
+echo "<label class='form-label'>" . __('Status') . $required . "</label>";
+Ticket::dropdownStatus([
+   'name'              => 'status',
+   'value'             => $_POST['status'] ?? Ticket::INCOMING,
+   'showtype'          => 'allowed',
+   'value_calculation' => Ticket::INCOMING,
+   'width'             => '100%',
+]);
+echo "</div>";
+echo "<div class='w-100'></div>";
 
 // Type
 echo "<div class='col-md-6 mb-3'>";
-echo "<label class='form-label'>" . __('Type') . " *</label>";
+echo "<label class='form-label'>" . __('Type') . $required . "</label>";
 Ticket::dropdownType('type', ['value' => $_POST['type'] ?? Ticket::INCIDENT_TYPE, 'width' => '100%']);
 echo "</div>";
 
 // Categorie
 echo "<div class='col-md-6 mb-3'>";
-echo "<label class='form-label'>" . __('Category') . " *</label>";
+echo "<label class='form-label'>" . __('Category') . $required . "</label>";
 Dropdown::show('ITILCategory', [
    'name'  => 'itilcategories_id',
    'value' => $_POST['itilcategories_id'] ?? 0,
@@ -142,13 +170,13 @@ echo "</div>";
 
 // Titre
 echo "<div class='col-12 mb-3'>";
-echo "<label class='form-label'>" . __('Title') . " *</label>";
+echo "<label class='form-label'>" . __('Title') . $required . "</label>";
 echo Html::input('name', ['value' => $_POST['name'] ?? '', 'class' => 'form-control']);
 echo "</div>";
 
 // Description (editeur enrichi, comme un vrai ticket)
 echo "<div class='col-12 mb-3'>";
-echo "<label class='form-label'>" . __('Description') . " *</label>";
+echo "<label class='form-label'>" . __('Description') . $required . "</label>";
 Html::textarea([
    'name'              => 'content',
    'value'            => $_POST['content'] ?? '',
@@ -160,11 +188,22 @@ Html::textarea([
 echo "</div>";
 
 echo "<hr>";
-echo "<h5 class='mb-3'>" . __('Tache (ajoutee a chaque ticket)', 'ticketmultiple') . "</h5>";
+
+// Tache facultative : l'interrupteur affiche ou masque ses champs (activee par defaut).
+echo "<div class='col-12 mb-3'>";
+echo "<label class='form-check form-switch mb-0'>";
+echo "<input type='checkbox' class='form-check-input' id='ticketmultiple_add_task' name='add_task' value='1'"
+   . ($add_task ? " checked" : "") . ">";
+echo "<span class='form-check-label fw-bold'>" . __('Ajouter une tache a chaque ticket', 'ticketmultiple') . "</span>";
+echo "</label>";
+echo "</div>";
+
+echo "<div id='ticketmultiple_task_fields' class='col-12" . ($add_task ? "" : " d-none") . "'>";
+echo "<div class='row'>";
 
 // Contenu tache (editeur enrichi)
 echo "<div class='col-md-8 mb-3'>";
-echo "<label class='form-label'>" . __('Description de la tache', 'ticketmultiple') . " *</label>";
+echo "<label class='form-label'>" . __('Description de la tache', 'ticketmultiple') . $required . "</label>";
 Html::textarea([
    'name'              => 'task_content',
    'value'            => $_POST['task_content'] ?? '',
@@ -177,7 +216,7 @@ echo "</div>";
 
 // Duree tache
 echo "<div class='col-md-4 mb-3'>";
-echo "<label class='form-label'>" . __('Duration') . " *</label>";
+echo "<label class='form-label'>" . __('Duration') . $required . "</label>";
 Dropdown::showTimeStamp('task_actiontime', [
    'value'         => $_POST['task_actiontime'] ?? 0,
    'addfirstminutes' => true,
@@ -185,11 +224,18 @@ Dropdown::showTimeStamp('task_actiontime', [
 ]);
 echo "</div>";
 
+echo "</div></div>"; // row, ticketmultiple_task_fields
+echo Html::scriptBlock("
+   document.getElementById('ticketmultiple_add_task').addEventListener('change', function () {
+      document.getElementById('ticketmultiple_task_fields').classList.toggle('d-none', !this.checked);
+   });
+");
+
 echo "<hr>";
 
 // Entites (multiple)
 echo "<div class='col-12 mb-3'>";
-echo "<label class='form-label'>" . __('Entites cibles (un ticket sera cree par entite)', 'ticketmultiple') . " *</label>";
+echo "<label class='form-label'>" . __('Entites cibles (un ticket sera cree par entite)', 'ticketmultiple') . $required . "</label>";
 Dropdown::show('Entity', [
    'name'     => 'entities[]',
    'multiple' => true,
