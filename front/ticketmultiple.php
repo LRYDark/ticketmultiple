@@ -258,12 +258,27 @@ echo "<hr>";
 // Entites (multiple)
 echo "<div class='col-12 mb-3'>";
 echo "<label class='form-label'>" . __('Entites cibles (un ticket sera cree par entite)', 'ticketmultiple') . $required . "</label>";
-Dropdown::show('Entity', [
-   'name'     => 'entities[]',
+// Liste native de GLPI à choix multiples (boutons « Tout » / « Aucun ») : entités actives de la session, nom complet
+$entity_options = [];
+$active_entities = $_SESSION['glpiactiveentities'] ?? [];
+$active_entities = array_values(array_map('intval', is_array($active_entities) ? $active_entities : [$active_entities]));
+if (!empty($active_entities)) {
+   global $DB;
+   foreach ($DB->request([
+      'SELECT' => ['id', 'completename'],
+      'FROM'   => Entity::getTable(),
+      'WHERE'  => ['id' => $active_entities],
+      'ORDER'  => ['completename'],
+   ]) as $entity_row) {
+      $entity_options[(int) $entity_row['id']] = html_entity_decode((string) $entity_row['completename'], ENT_QUOTES, 'UTF-8');
+   }
+}
+$selected_entities = $_POST['entities'] ?? [];
+$selected_entities = array_values(array_map('intval', array_filter(is_array($selected_entities) ? $selected_entities : [$selected_entities], 'is_scalar')));
+Dropdown::showFromArray('entities', $entity_options, [
    'multiple' => true,
-   'value'    => $_POST['entities'] ?? [],
+   'values'   => $selected_entities,
    'width'    => '100%',
-   'entity'   => $_SESSION['glpiactiveentities'],
 ]);
 echo "</div>";
 
